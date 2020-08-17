@@ -12,7 +12,7 @@
     "import/no-extraneous-dependencies": [
       "error",
       {
-        "devDependencies": ["**/*.tests.js", "__tests__/**"]
+        "devDependencies": ["**/__tests__/*.js"]
       }
     ],
     "linebreak-style": 0,
