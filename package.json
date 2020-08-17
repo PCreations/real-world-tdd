@@ -1,0 +1,29 @@
+{
+  "name": "real-world-tdd",
+  "author": {
+    "name": "Pierre Criulanscy",
+    "email": "pierrecriulanscy@gmail.com"
+  },
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/cli": "^7.10.5",
+    "@babel/core": "^7.11.1",
+    "@babel/node": "^7.10.5",
+    "@babel/preset-env": "^7.11.0",
+    "babel-core": "^6.26.3",
+    "babel-eslint": "^10.1.0",
+    "eslint": "^7.7.0",
+    "eslint-config-airbnb": "^18.2.0",
+    "eslint-config-airbnb-base": "^14.2.0",
+    "eslint-config-prettier": "^6.11.0",
+    "eslint-plugin-import": "^2.22.0",
+    "eslint-plugin-prettier": "^3.1.4",
+    "jest": "^26.4.0",
+    "prettier": "^2.0.5",
+    "serverless-bundle": "^3.0.0",
+    "serverless-dotenv-plugin": "^3.0.0",
+    "serverless-offline-scheduler": "^0.4.2"
+  }
+}

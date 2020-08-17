@@ -1,0 +1,22 @@
+service: sitemaps
+
+provider:
+  name: aws
+  stage: development
+  region: us-east-2
+  runtime: nodejs12.x
+
+plugins:
+  - serverless-bundle
+  - serverless-offline-scheduler
+  - serverless-dotenv-plugin
+
+custom:
+  bundle:
+    linting: false
+
+functions:
+  recentArticlesSitemap:
+    handler: src/index.handler
+    events:
+      - schedule: rate(1 minute)
