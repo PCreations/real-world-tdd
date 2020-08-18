@@ -37,6 +37,7 @@
     ]
   },
   "dependencies": {
+    "aws-sdk": "^2.735.0",
     "axios": "^0.19.2"
   }
 }
