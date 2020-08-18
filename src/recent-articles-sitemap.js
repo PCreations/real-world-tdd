@@ -1,17 +1,20 @@
 import { generateSitemapXML } from "./generate-sitemap-xml";
 import { createIsRecentArticle } from "./is-recent-article";
+import { createExecuteLatestArticlesQuery } from "./execute-latest-articles-query";
 
 export const createRecentArticlesSitemap = ({
   today,
   domain,
+  executeLatestArticlesQuery = createExecuteLatestArticlesQuery(),
   language,
-  articles,
 }) => {
   const isRecentArticle = createIsRecentArticle(today);
 
-  return async () =>
-    generateSitemapXML({
+  return async () => {
+    const response = await executeLatestArticlesQuery({ domain });
+    return generateSitemapXML({
       language,
-      articles: articles.filter(isRecentArticle),
+      articles: response.getArticles().filter(isRecentArticle),
     });
+  };
 };

@@ -5,6 +5,7 @@ import {
 } from "./create-test-article";
 import { createRecentArticlesSitemap } from "../recent-articles-sitemap";
 import { generateSitemapXML } from "../generate-sitemap-xml";
+import { createFakeExecuteLatestArticlesQuery } from "../execute-latest-articles-query";
 
 describe("recentArticlesSitemap", () => {
   it("generates the sitemap xml of the latest articles for a specific domain and language", async () => {
@@ -15,14 +16,18 @@ describe("recentArticlesSitemap", () => {
       createTestArticlePublishedTwoDaysAgo(today),
       createTestArticlePublishedThreeDaysAgo(today),
     ];
-    const expectedArticles = articles.slice(0, 2);
     const domain = "wwww.my-website.co-uk";
+    const executeLatestArticlesQuery = createFakeExecuteLatestArticlesQuery({
+      domain,
+      articles,
+    });
+    const expectedArticles = articles.slice(0, 2);
     const language = "en-GB";
     const recentArticlesSitemap = createRecentArticlesSitemap({
       today,
       domain,
+      executeLatestArticlesQuery,
       language,
-      articles,
     });
 
     // act
