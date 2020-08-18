@@ -6,6 +6,7 @@ import {
 import { createRecentArticlesSitemap } from "../recent-articles-sitemap";
 import { generateSitemapXML } from "../generate-sitemap-xml";
 import { createFakeExecuteLatestArticlesQuery } from "../execute-latest-articles-query";
+import { createFakeXMLUploader } from "../xml-uploader";
 
 describe("recentArticlesSitemap", () => {
   it("generates the sitemap xml of the latest articles for a specific domain and language", async () => {
@@ -21,20 +22,22 @@ describe("recentArticlesSitemap", () => {
       domain,
       articles,
     });
+    const xmlUploader = createFakeXMLUploader();
     const expectedArticles = articles.slice(0, 2);
     const language = "en-GB";
     const recentArticlesSitemap = createRecentArticlesSitemap({
       today,
       domain,
       executeLatestArticlesQuery,
+      xmlUploader,
       language,
     });
 
     // act
-    const xml = await recentArticlesSitemap();
+    await recentArticlesSitemap();
 
     // assert
-    expect(xml).toEqual(
+    expect(xmlUploader.getLastSentXML(domain)).toEqual(
       generateSitemapXML({ language, articles: expectedArticles })
     );
   });

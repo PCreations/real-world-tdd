@@ -1,7 +1,12 @@
-import { createXMLUploader } from "../xml-uploader";
+import {
+  createXMLUploader,
+  createFakeXMLUploader,
+  createXMLUploaderThatWillFail,
+  XMLUploadError,
+} from "../xml-uploader";
 
 describe("xmlUploader", () => {
-  it("uploads the xml to an s3 bucket", async () => {
+  it.skip("uploads the xml to an s3 bucket", async () => {
     // arrange
     const domain = "www.some-url.com";
     const xml = `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
