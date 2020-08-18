@@ -2,6 +2,10 @@ import { inspect } from "util";
 import {
   createExecuteLatestArticlesQuery,
   createFakeExecuteLatestArticlesQuery,
+  createErroneousExecuteLatestArticlesQuery,
+  createExecuteLatestArticlesQueryThatTimesOut,
+  GraphQLError,
+  RequestTimeoutError,
 } from "../execute-latest-articles-query";
 import { createTestArticle } from "./create-test-article";
 
@@ -43,24 +47,12 @@ describe("executeLatestArticlesQuery", () => {
   });
   it("can be faked with predefined response for a specific domain", async () => {
     // arrange
+    expect.assertions(1);
     const domain = "wwww.my-website.co-uk";
-    const predifinedResponse = {
-      data: {
-        data: {
-          latestArticles: {
-            edges: [
-              {
-                node: createTestArticle(),
-              },
-            ],
-          },
-        },
-      },
-    };
+    const articles = [createTestArticle(), createTestArticle()];
     const executeLatestArticlesQuery = createFakeExecuteLatestArticlesQuery({
-      responseForDomain: {
-        [domain]: predifinedResponse,
-      },
+      domain,
+      articles,
     });
 
     // act
@@ -68,5 +60,48 @@ describe("executeLatestArticlesQuery", () => {
 
     // assert
     expect(response.getArticles()[0]).toBeAnArticle();
+  });
+
+  it("fails with a GraphQLError if the response contains graphql errors", async () => {
+    // arrange
+    expect.assertions(1);
+    const domain = "wwww.my-website.co-uk";
+    const executeLatestArticlesQuery = createErroneousExecuteLatestArticlesQuery(
+      {
+        domain,
+        graphQLErrors: [
+          {
+            message: "some error message",
+          },
+          {
+            message: "some other error message",
+          },
+        ],
+      }
+    );
+
+    // act & assert
+    await expect(executeLatestArticlesQuery({ domain })).rejects.toEqual(
+      new GraphQLError([
+        {
+          message: "some error message",
+        },
+        {
+          message: "some other error message",
+        },
+      ])
+    );
+  });
+
+  it("fails with a RequestTimeoutError if the request times out", async () => {
+    // arrange
+    expect.assertions(1);
+    const domain = "wwww.my-website.co-uk";
+    const executeLatestArticlesQuery = createExecuteLatestArticlesQueryThatTimesOut();
+
+    // act & assert
+    await expect(executeLatestArticlesQuery({ domain })).rejects.toEqual(
+      new RequestTimeoutError()
+    );
   });
 });
