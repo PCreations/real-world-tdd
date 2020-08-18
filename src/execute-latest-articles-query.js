@@ -13,8 +13,10 @@ const LATEST_ARTICLES_QUERY = `query LatestArticles($first: Int!) {
 }
 `;
 
-export const executeLatestArticlesQuery = async ({ domain }) => {
-  const response = await axios({
+export const createExecuteLatestArticlesQuery = ({
+  sendQuery = axios,
+} = {}) => async ({ domain }) => {
+  const response = await sendQuery({
     method: "POST",
     url: process.env.GRAPHQL_API_ENDPOINT,
     data: {
@@ -35,3 +37,12 @@ export const executeLatestArticlesQuery = async ({ domain }) => {
     },
   };
 };
+
+const fakeSendQuery = ({ responseForDomain }) => async ({
+  headers: { domain },
+}) => responseForDomain[domain];
+
+export const createFakeExecuteLatestArticlesQuery = ({ responseForDomain }) =>
+  createExecuteLatestArticlesQuery({
+    sendQuery: fakeSendQuery({ responseForDomain }),
+  });
