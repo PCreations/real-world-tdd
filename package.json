@@ -14,6 +14,7 @@
     "@babel/preset-env": "^7.11.0",
     "babel-core": "^6.26.3",
     "babel-eslint": "^10.1.0",
+    "dotenv": "^8.2.0",
     "eslint": "^7.7.0",
     "eslint-config-airbnb": "^18.2.0",
     "eslint-config-airbnb-base": "^14.2.0",
@@ -30,6 +31,12 @@
   "jest": {
     "testMatch": [
       "**/__tests__/**/*.test.js"
+    ],
+    "setupFiles": [
+      "dotenv/config"
     ]
+  },
+  "dependencies": {
+    "axios": "^0.19.2"
   }
 }
