@@ -11,14 +11,27 @@ export const createRecentArticlesSitemap = ({
   language,
 }) => {
   const isRecentArticle = createIsRecentArticle(today);
+  let articles = [];
 
   return async () => {
-    const response = await executeLatestArticlesQuery({ domain });
+    let needToFetchMore = false;
+    let after = null;
+
+    do {
+      /* eslint-disable no-await-in-loop */
+      const response = await executeLatestArticlesQuery({ domain, after });
+      articles = articles.concat(response.getArticles());
+      after = response.getNextPageCursor();
+      needToFetchMore =
+        response.getNextPageCursor() !== null &&
+        response.getArticles().every(isRecentArticle);
+    } while (needToFetchMore);
+
     await xmlUploader.upload({
       domain,
       xml: generateSitemapXML({
         language,
-        articles: response.getArticles().filter(isRecentArticle),
+        articles: articles.filter(isRecentArticle),
       }),
     });
   };

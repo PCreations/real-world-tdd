@@ -21,7 +21,7 @@ const StatusCode = {
   TIME_OUT: 408,
 };
 
-const LATEST_ARTICLES_QUERY = `query LatestArticles($first: Int!) {
+const LATEST_ARTICLES_QUERY = `query LatestArticles($first: Int!, $after: String) {
   latestArticles(first: $first) {
     edges {
       node {
@@ -29,6 +29,10 @@ const LATEST_ARTICLES_QUERY = `query LatestArticles($first: Int!) {
         title
         url
       }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
     }
   }
 }
@@ -38,7 +42,7 @@ const DEFAULT_TIMEOUT_MS = 10000;
 
 export const createExecuteLatestArticlesQuery = ({
   sendQuery = axios,
-} = {}) => async ({ domain } = {}) => {
+} = {}) => async ({ domain, after = null } = {}) => {
   let response;
   try {
     response = await sendQuery({
@@ -48,6 +52,7 @@ export const createExecuteLatestArticlesQuery = ({
         query: LATEST_ARTICLES_QUERY,
         variables: {
           first: 10,
+          after,
         },
       },
       headers: {
@@ -65,80 +70,103 @@ export const createExecuteLatestArticlesQuery = ({
     }
   }
 
+  const { latestArticles } = response.data.data;
+
   return {
     getArticles() {
-      return response.data.data.latestArticles.edges.map(({ node }) => node);
+      return latestArticles.edges.map(({ node }) => node);
+    },
+    getNextPageCursor() {
+      return latestArticles.pageInfo.hasNextPage
+        ? latestArticles.pageInfo.endCursor
+        : null;
     },
   };
 };
 
-const fakeSendQuery = ({ responseForDomain }) => ({ headers: { domain } }) => {
-  if (responseForDomain[domain]?.status !== StatusCode.SUCCESS) {
+const fakeSendQuery = ({ getResponseByDomainAndCursor }) => ({
+  data: {
+    variables: { after },
+  },
+  headers: { domain },
+}) => {
+  const response = getResponseByDomainAndCursor({ domain, after });
+  if (response.status !== StatusCode.SUCCESS) {
     const error = new Error();
-    error.response = responseForDomain[domain];
+    error.response = response;
     return Promise.reject(error);
   }
-  return Promise.resolve(responseForDomain[domain]);
+  return Promise.resolve(response);
 };
 
 export const createFakeExecuteLatestArticlesQuery = ({
   domain: expectedDomain,
-  articles,
-}) => async ({ domain }) => {
-  const executeLatestArticleQuery = createExecuteLatestArticlesQuery({
-    sendQuery: fakeSendQuery({
-      responseForDomain: {
-        [expectedDomain]: {
-          status: StatusCode.SUCCESS,
+  articlesPagesByCursor = {},
+}) => {
+  const getResponseByDomainAndCursor = ({ domain, after }) => {
+    if (domain === expectedDomain) {
+      const { endCursor } = articlesPagesByCursor[after];
+      const hasNextPage = articlesPagesByCursor[endCursor] !== undefined;
+      return {
+        status: StatusCode.SUCCESS,
+        data: {
           data: {
-            data: {
-              latestArticles: {
-                edges: articles.map((article) => ({
-                  node: article,
-                })),
+            latestArticles: {
+              edges: articlesPagesByCursor[after].articles.map((article) => ({
+                node: article,
+              })),
+              pageInfo: {
+                hasNextPage,
+                endCursor,
               },
             },
           },
         },
-      },
+      };
+    }
+    return {};
+  };
+
+  return createExecuteLatestArticlesQuery({
+    sendQuery: fakeSendQuery({
+      getResponseByDomainAndCursor,
     }),
   });
-
-  return executeLatestArticleQuery({ domain });
 };
 
 export const createErroneousExecuteLatestArticlesQuery = ({
   domain: expectedDomain,
   graphQLErrors,
-}) => async ({ domain }) => {
-  const executeLatestArticleQuery = createExecuteLatestArticlesQuery({
-    sendQuery: fakeSendQuery({
-      responseForDomain: {
-        [expectedDomain]: {
+}) => {
+  const getResponseByDomainAndCursor = ({ domain }) =>
+    domain === expectedDomain
+      ? {
           status: StatusCode.BAD_REQUEST,
           data: {
             errors: graphQLErrors,
           },
-        },
-      },
+        }
+      : {};
+
+  return createExecuteLatestArticlesQuery({
+    sendQuery: fakeSendQuery({
+      getResponseByDomainAndCursor,
     }),
   });
-
-  return executeLatestArticleQuery({ domain });
 };
 
-export const createExecuteLatestArticlesQueryThatTimesOut = () => async ({
-  domain,
+export const createExecuteLatestArticlesQueryThatTimesOut = ({
+  domain: expectedDomain,
 }) => {
-  const executeLatestArticleQuery = createExecuteLatestArticlesQuery({
-    sendQuery: fakeSendQuery({
-      responseForDomain: {
-        [domain]: {
+  const getResponseByDomainAndCursor = ({ domain }) =>
+    domain === expectedDomain
+      ? {
           status: StatusCode.TIME_OUT,
-        },
-      },
+        }
+      : {};
+  return createExecuteLatestArticlesQuery({
+    sendQuery: fakeSendQuery({
+      getResponseByDomainAndCursor,
     }),
   });
-
-  return executeLatestArticleQuery({ domain });
 };

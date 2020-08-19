@@ -44,6 +44,7 @@ describe("executeLatestArticlesQuery", () => {
 
     // assert
     expect(response.getArticles()[0]).toBeAnArticle();
+    expect(response.getNextPageCursor()).toBeDefined();
   });
   it("can be faked with predefined response for a specific domain", async () => {
     // arrange
@@ -52,14 +53,89 @@ describe("executeLatestArticlesQuery", () => {
     const articles = [createTestArticle(), createTestArticle()];
     const executeLatestArticlesQuery = createFakeExecuteLatestArticlesQuery({
       domain,
-      articles,
+      articlesPagesByCursor: {
+        null: { articles },
+      },
     });
 
     // act
-    const response = await executeLatestArticlesQuery({ domain });
+    const response = await executeLatestArticlesQuery({
+      domain,
+    });
 
     // assert
-    expect(response.getArticles()[0]).toBeAnArticle();
+    expect(response.getArticles()).toEqual(articles);
+  });
+
+  it("can retrieved response for a specific domain and cursor", async () => {
+    // arrange
+    expect.assertions(1);
+    const domain = "wwww.my-website.co-uk";
+    const articles = [createTestArticle(), createTestArticle()];
+    const secondPageArticles = [createTestArticle(), createTestArticle()];
+    const executeLatestArticlesQuery = createFakeExecuteLatestArticlesQuery({
+      domain,
+      articlesPagesByCursor: {
+        null: { articles, endCursor: "some-cursor" },
+        "some-cursor": { articles: secondPageArticles },
+      },
+    });
+
+    // act
+    const response = await executeLatestArticlesQuery({
+      domain,
+      after: "some-cursor",
+    });
+
+    // assert
+    expect(response.getArticles()).toEqual(secondPageArticles);
+  });
+
+  it("returns the next page cursor if there is a next page to fetch", async () => {
+    // arrange
+    expect.assertions(1);
+    const domain = "wwww.my-website.co-uk";
+    const firstPage = [createTestArticle(), createTestArticle()];
+    const secondPage = [createTestArticle(), createTestArticle()];
+    const executeLatestArticlesQuery = createFakeExecuteLatestArticlesQuery({
+      domain,
+      articlesPagesByCursor: {
+        null: { articles: firstPage, endCursor: "some-end-cursor" },
+        "some-end-cursor": { articles: secondPage },
+      },
+    });
+
+    // act
+    const response = await executeLatestArticlesQuery({
+      domain,
+    });
+
+    // assert
+    expect(response.getNextPageCursor()).toEqual("some-end-cursor");
+  });
+
+  it("does not return the next page cursor if there is no next page to fetch", async () => {
+    // arrange
+    expect.assertions(1);
+    const domain = "wwww.my-website.co-uk";
+    const articles = [createTestArticle(), createTestArticle()];
+    const secondPageArticles = [createTestArticle(), createTestArticle()];
+    const executeLatestArticlesQuery = createFakeExecuteLatestArticlesQuery({
+      domain,
+      articlesPagesByCursor: {
+        null: { articles, endCursor: "some-end-cursor" },
+        "some-end-cursor": { articles: secondPageArticles },
+      },
+    });
+
+    // act
+    const response = await executeLatestArticlesQuery({
+      domain,
+      after: "some-end-cursor",
+    });
+
+    // assert
+    expect(response.getNextPageCursor()).toBeNull();
   });
 
   it("fails with a GraphQLError if the response contains graphql errors", async () => {
@@ -97,7 +173,9 @@ describe("executeLatestArticlesQuery", () => {
     // arrange
     expect.assertions(1);
     const domain = "wwww.my-website.co-uk";
-    const executeLatestArticlesQuery = createExecuteLatestArticlesQueryThatTimesOut();
+    const executeLatestArticlesQuery = createExecuteLatestArticlesQueryThatTimesOut(
+      { domain }
+    );
 
     // act & assert
     await expect(executeLatestArticlesQuery({ domain })).rejects.toEqual(
