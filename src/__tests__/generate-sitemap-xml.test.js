@@ -1,4 +1,4 @@
-import { createTestArticle } from "./create-test-article";
+import { createTestArticle } from "./test-data/create-test-article";
 import { createArticleToXML } from "../article-to-xml";
 import { generateSitemapXML } from "../generate-sitemap-xml";
 

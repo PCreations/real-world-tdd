@@ -3,7 +3,7 @@ import {
   createTestArticlePublishedOneDayAgo,
   createTestArticlePublishedTwoDaysAgo,
   createTestArticlePublishedThreeDaysAgo,
-} from "./create-test-article";
+} from "./test-data/create-test-article";
 
 describe("is-recent-article", () => {
   it("returns true if the article is less than 2 days old", () => {

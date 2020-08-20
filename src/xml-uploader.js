@@ -16,7 +16,6 @@ AWS.config.update({
 const buildKey = (domain) => `${domain}/sitemap.xml`;
 
 export const createXMLUploader = ({ s3 = new AWS.S3() } = {}) => {
-  const sentXML = {};
   return {
     async upload({ domain, xml }) {
       try {
@@ -31,28 +30,6 @@ export const createXMLUploader = ({ s3 = new AWS.S3() } = {}) => {
       } catch (error) {
         throw new XMLUploadError(error.message);
       }
-      sentXML[buildKey(domain)] = xml;
-    },
-    getLastSentXML(domain) {
-      return sentXML[buildKey(domain)];
     },
   };
 };
-
-const createFakeS3 = ({ uploadErrorMessage = null } = {}) => ({
-  putObject() {
-    return {
-      promise() {
-        return uploadErrorMessage
-          ? Promise.reject(new Error(uploadErrorMessage))
-          : Promise.resolve();
-      },
-    };
-  },
-});
-
-export const createFakeXMLUploader = () =>
-  createXMLUploader({ s3: createFakeS3() });
-
-export const createXMLUploaderThatWillFail = (uploadErrorMessage) =>
-  createXMLUploader({ s3: createFakeS3({ uploadErrorMessage }) });

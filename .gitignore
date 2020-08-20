@@ -8,3 +8,4 @@ jspm_packages
 
 .env
 .yarn-error.log
+jest.config.wallaby.js

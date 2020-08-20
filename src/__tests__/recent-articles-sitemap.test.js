@@ -2,11 +2,12 @@ import {
   createTestArticlePublishedOneDayAgo,
   createTestArticlePublishedTwoDaysAgo,
   createTestArticlePublishedThreeDaysAgo,
-} from "./create-test-article";
+} from "./test-data/create-test-article";
 import { createRecentArticlesSitemap } from "../recent-articles-sitemap";
 import { generateSitemapXML } from "../generate-sitemap-xml";
-import { createFakeExecuteLatestArticlesQuery } from "../execute-latest-articles-query";
-import { createFakeXMLUploader } from "../xml-uploader";
+import { mockedXMLUploader } from "./mocks/xml-uploader";
+import { createLatestArticlesQuery } from "../latest-articles-query";
+import { mockedSendLatestArticlesQueryWithResponses } from "./mocks/send-latest-articles-query";
 
 describe("recentArticlesSitemap", () => {
   it("generates the sitemap xml of the latest articles for a specific domain and language", async () => {
@@ -23,15 +24,33 @@ describe("recentArticlesSitemap", () => {
       createTestArticlePublishedThreeDaysAgo(today),
     ];
     const domain = "wwww.my-website.co-uk";
-    const executeLatestArticlesQuery = createFakeExecuteLatestArticlesQuery({
-      domain,
-      articlesPagesByCursor: {
-        null: { articles: firstPageArticles, endCursor: "some-end-cursor" },
-        "some-end-cursor": { articles: secondPageArticles },
+    const {
+      sendLatestArticlesQuery,
+    } = mockedSendLatestArticlesQueryWithResponses([
+      {
+        articles: firstPageArticles,
+        pageInfo: {
+          hasNextPage: true,
+          endCursor: "some-end-cursor",
+        },
       },
-      endCursor: "some-end-cursor",
+      {
+        articles: secondPageArticles,
+        pageInfo: {
+          hasNextPage: false,
+          endCursor: null,
+        },
+      },
+    ]);
+
+    const expectedFirstQuery = createLatestArticlesQuery({ domain });
+    const expectedSecondQuery = createLatestArticlesQuery({
+      domain,
+      after: "some-end-cursor",
     });
-    const xmlUploader = createFakeXMLUploader();
+    const spy = { sendLatestArticlesQuery };
+    jest.spyOn(spy, "sendLatestArticlesQuery");
+    const { xmlUploader, expectToHavePutFile } = mockedXMLUploader();
     const expectedArticles = firstPageArticles.concat(
       secondPageArticles.slice(0, 2)
     );
@@ -39,7 +58,7 @@ describe("recentArticlesSitemap", () => {
     const recentArticlesSitemap = createRecentArticlesSitemap({
       today,
       domain,
-      executeLatestArticlesQuery,
+      sendLatestArticlesQuery: spy.sendLatestArticlesQuery,
       xmlUploader,
       language,
     });
@@ -48,8 +67,17 @@ describe("recentArticlesSitemap", () => {
     await recentArticlesSitemap();
 
     // assert
-    expect(xmlUploader.getLastSentXML(domain)).toEqual(
-      generateSitemapXML({ language, articles: expectedArticles })
+    expect(spy.sendLatestArticlesQuery).toHaveBeenNthCalledWith(
+      1,
+      expectedFirstQuery
     );
+    expect(spy.sendLatestArticlesQuery).toHaveBeenNthCalledWith(
+      2,
+      expectedSecondQuery
+    );
+    expectToHavePutFile({
+      xml: generateSitemapXML({ language, articles: expectedArticles }),
+      domain,
+    });
   });
 });
