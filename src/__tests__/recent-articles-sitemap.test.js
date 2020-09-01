@@ -1,30 +1,18 @@
 import { createRecentArticlesSitemap } from "../recent-articles-sitemap";
-
-const ONE_DAY_IN_MS = 3600 * 24 * 1000;
+import {
+  createTestArticlePublishedOneDayAgo,
+  createTestArticlePublishedTwoDaysAgo,
+  createTestArticlePublishedThreeDaysAgo,
+} from "./data/create-test-article";
 
 describe("recentArticlesSitemap", () => {
   it("generates the sitemap xml of the latest articles for a specific domain and language", async () => {
     // arrange
     const today = new Date("2020-09-01T12:07:23.997Z");
-    const oneDayAgo = new Date(+today - ONE_DAY_IN_MS);
-    const twoDaysAgo = new Date(+oneDayAgo - ONE_DAY_IN_MS);
-    const threeDaysAgo = new Date(+twoDaysAgo - ONE_DAY_IN_MS);
     const articles = [
-      {
-        publicationDate: oneDayAgo.toISOString(),
-        title: "article 1",
-        url: "www.article-1-link.com",
-      },
-      {
-        publicationDate: twoDaysAgo.toISOString(),
-        title: "article 2",
-        url: "www.article-2-link.com",
-      },
-      {
-        publicationDate: threeDaysAgo.toISOString(),
-        title: "article 3",
-        url: "www.article-3-link.com",
-      },
+      createTestArticlePublishedOneDayAgo({ today }),
+      createTestArticlePublishedTwoDaysAgo({ today }),
+      createTestArticlePublishedThreeDaysAgo({ today }),
     ];
     const domain = "wwww.my-website.co-uk";
     const language = "en-GB";
