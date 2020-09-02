@@ -13,9 +13,9 @@ export const createTestArticle = ({
 });
 
 const createTestArticlePublishedXDaysAgo = (daysAgo) => ({
-  today,
+  today = new Date(),
   ...articleFields
-}) =>
+} = {}) =>
   createTestArticle({
     publicationDate: new Date(+today - daysAgo * ONE_DAY_IN_MS),
     ...articleFields,

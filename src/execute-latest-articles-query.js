@@ -21,4 +21,4 @@ export const executeLatestArticlesQuery = ({ domain, graphQLEndpoint }) =>
       "content-type": "application/json",
       domain,
     },
-  });
+  }).then((response) => response.data.data.latestArticles);
