@@ -1,5 +1,14 @@
 import axios from "axios";
 
+export class GraphQLError extends Error {
+  constructor(graphQLErrors = []) {
+    super();
+    this.message = `GraphQL errors : ${graphQLErrors
+      .map(({ message }) => message)
+      .join("\n")}`;
+  }
+}
+
 const LATEST_ARTICLES_QUERY = `
   query {
     latestArticles {
@@ -21,4 +30,8 @@ export const executeLatestArticlesQuery = ({ domain, graphQLEndpoint }) =>
       "content-type": "application/json",
       domain,
     },
-  }).then((response) => response.data.data.latestArticles);
+  })
+    .then((response) => response.data.data.latestArticles)
+    .catch((error) => {
+      throw new GraphQLError(error.response.data.errors);
+    });

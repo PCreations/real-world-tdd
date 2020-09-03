@@ -1,5 +1,8 @@
 import { createTestServer } from "./test-server";
-import { executeLatestArticlesQuery } from "../execute-latest-articles-query";
+import {
+  executeLatestArticlesQuery,
+  GraphQLError,
+} from "../execute-latest-articles-query";
 import { createTestArticlePublishedOneDayAgo } from "./data/create-test-article";
 
 describe("executeLatestArticlesQuery", () => {
@@ -73,5 +76,31 @@ describe("executeLatestArticlesQuery", () => {
 
     // assert
     expect(articles).toEqual(expectedArticles);
+  });
+
+  it("fails with a GraphQLError if there are graphQL errors in the response", async () => {
+    // arrange
+    expect.assertions(1);
+    const domain = "www.my-website.co.uk";
+    const graphQLEndpoint = "http://localhost:4123";
+    const expectedErrors = [
+      {
+        message: "some error",
+      },
+      {
+        message: "some other error",
+      },
+    ];
+    testServer.setResponse({
+      status: 400,
+      body: {
+        errors: expectedErrors,
+      },
+    });
+
+    // act & assert
+    await expect(
+      executeLatestArticlesQuery({ domain, graphQLEndpoint })
+    ).rejects.toEqual(new GraphQLError(expectedErrors));
   });
 });
