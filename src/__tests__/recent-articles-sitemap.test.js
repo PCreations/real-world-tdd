@@ -5,6 +5,7 @@ import {
   createTestArticlePublishedThreeDaysAgo,
 } from "./data/create-test-article";
 import { articleToXml } from "../article-to-xml";
+import { createFakeExecuteLatestArticlesQuery } from "../execute-latest-articles-query";
 
 describe("recentArticlesSitemap", () => {
   it("generates the sitemap xml of the latest articles for a specific domain and language", async () => {
@@ -17,9 +18,12 @@ describe("recentArticlesSitemap", () => {
     ];
     const domain = "wwww.my-website.co-uk";
     const language = "en-GB";
+    const executeLatestArticlesQuery = createFakeExecuteLatestArticlesQuery({
+      [domain]: articles,
+    });
     const recentArticlesSitemap = createRecentArticlesSitemap({
       todayDate: today,
-      articles,
+      executeLatestArticlesQuery,
     });
 
     // act
