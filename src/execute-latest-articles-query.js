@@ -19,8 +19,10 @@ const LATEST_ARTICLES_QUERY = `
   }
 `;
 
-export const executeLatestArticlesQuery = ({ domain, graphQLEndpoint }) =>
-  axios({
+export const createExecuteLatestArticlesQuery = ({
+  sendQuery = axios,
+} = {}) => ({ domain, graphQLEndpoint }) =>
+  sendQuery({
     url: graphQLEndpoint,
     method: "POST",
     data: {
@@ -35,3 +37,17 @@ export const executeLatestArticlesQuery = ({ domain, graphQLEndpoint }) =>
     .catch((error) => {
       throw new GraphQLError(error.response.data.errors);
     });
+
+const fakeSendQuery = (articlesForDomain) => (request) =>
+  Promise.resolve({
+    data: {
+      data: {
+        latestArticles: articlesForDomain[request.headers.domain],
+      },
+    },
+  });
+
+export const createFakeExecuteLatestArticlesQuery = (articlesForDomain) =>
+  createExecuteLatestArticlesQuery({
+    sendQuery: fakeSendQuery(articlesForDomain),
+  });

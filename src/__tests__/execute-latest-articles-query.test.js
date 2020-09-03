@@ -1,6 +1,7 @@
 import { createTestServer } from "./test-server";
 import {
-  executeLatestArticlesQuery,
+  createExecuteLatestArticlesQuery,
+  createFakeExecuteLatestArticlesQuery,
   GraphQLError,
 } from "../execute-latest-articles-query";
 import { createTestArticlePublishedOneDayAgo } from "./data/create-test-article";
@@ -17,6 +18,7 @@ describe("executeLatestArticlesQuery", () => {
   it("executes the correct request", async () => {
     // arrange
     expect.assertions(3);
+    const executeLatestArticlesQuery = createExecuteLatestArticlesQuery();
     const domain = "www.my-website.co.uk";
     const graphQLEndpoint = "http://localhost:4123";
     const expectedGraphQLQuery = `
@@ -52,6 +54,7 @@ describe("executeLatestArticlesQuery", () => {
   it("get the latest articles from the graphQL response", async () => {
     // arrange
     expect.assertions(1);
+    const executeLatestArticlesQuery = createExecuteLatestArticlesQuery();
     const domain = "www.my-website.co.uk";
     const graphQLEndpoint = "http://localhost:4123";
     const expectedArticles = [
@@ -81,6 +84,7 @@ describe("executeLatestArticlesQuery", () => {
   it("fails with a GraphQLError if there are graphQL errors in the response", async () => {
     // arrange
     expect.assertions(1);
+    const executeLatestArticlesQuery = createExecuteLatestArticlesQuery();
     const domain = "www.my-website.co.uk";
     const graphQLEndpoint = "http://localhost:4123";
     const expectedErrors = [
@@ -102,5 +106,38 @@ describe("executeLatestArticlesQuery", () => {
     await expect(
       executeLatestArticlesQuery({ domain, graphQLEndpoint })
     ).rejects.toEqual(new GraphQLError(expectedErrors));
+  });
+
+  it("response can be faked with predefined articles for a specific domain", async () => {
+    // arrange
+    expect.assertions(2);
+    const domainA = "www.domain-a.co.uk";
+    const expectedArticlesForDomainA = [
+      createTestArticlePublishedOneDayAgo(),
+      createTestArticlePublishedOneDayAgo(),
+      createTestArticlePublishedOneDayAgo(),
+    ];
+    const domainB = "www.domain-b.co.uk";
+    const expectedArticlesForDomainB = [
+      createTestArticlePublishedOneDayAgo(),
+      createTestArticlePublishedOneDayAgo(),
+      createTestArticlePublishedOneDayAgo(),
+    ];
+    const executeLatestArticlesQuery = createFakeExecuteLatestArticlesQuery({
+      [domainA]: expectedArticlesForDomainA,
+      [domainB]: expectedArticlesForDomainB,
+    });
+
+    // act
+    const receivedArticlesForDomainA = await executeLatestArticlesQuery({
+      domain: domainA,
+    });
+    const receivedArticlesForDomainB = await executeLatestArticlesQuery({
+      domain: domainB,
+    });
+
+    // assert
+    expect(receivedArticlesForDomainA).toEqual(expectedArticlesForDomainA);
+    expect(receivedArticlesForDomainB).toEqual(expectedArticlesForDomainB);
   });
 });
