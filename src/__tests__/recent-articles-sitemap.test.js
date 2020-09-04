@@ -6,6 +6,7 @@ import {
 } from "./data/create-test-article";
 import { articleToXml } from "../article-to-xml";
 import { createFakeExecuteLatestArticlesQuery } from "../execute-latest-articles-query";
+import { createFakeS3xmlUploader } from "../s3-xml-uploader";
 
 describe("recentArticlesSitemap", () => {
   it("generates the sitemap xml of the latest articles for a specific domain and language", async () => {
@@ -21,16 +22,20 @@ describe("recentArticlesSitemap", () => {
     const executeLatestArticlesQuery = createFakeExecuteLatestArticlesQuery({
       [domain]: articles,
     });
+    const s3xmlUploader = createFakeS3xmlUploader({
+      bucketName: "test-bucket",
+    });
     const recentArticlesSitemap = createRecentArticlesSitemap({
       todayDate: today,
       executeLatestArticlesQuery,
+      s3xmlUploader,
     });
 
     // act
-    const xml = await recentArticlesSitemap({ domain, language });
+    await recentArticlesSitemap({ domain, language });
 
     // assert
-    expect(xml).toEqual(
+    expect(s3xmlUploader.getLastPutObject().Body).toEqual(
       `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">${articles
         .slice(0, 2)
         .map((article) => articleToXml({ language, article }))
