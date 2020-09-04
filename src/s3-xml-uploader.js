@@ -6,9 +6,7 @@ aws.config.update({
   region: process.env.REGION,
 });
 
-export const createS3xmlUploader = ({ bucketName }) => {
-  const s3 = new aws.S3();
-
+export const createS3xmlUploader = ({ bucketName, s3 = new aws.S3() }) => {
   let lastPutObject;
 
   return {
@@ -31,3 +29,16 @@ export const createS3xmlUploader = ({ bucketName }) => {
     },
   };
 };
+
+const fakeS3 = () => ({
+  putObject() {
+    return {
+      promise() {
+        return Promise.resolve();
+      },
+    };
+  },
+});
+
+export const createFakeS3xmlUploader = ({ bucketName }) =>
+  createS3xmlUploader({ bucketName, s3: fakeS3() });
