@@ -1,20 +1,12 @@
-import * as getLatestArticles from "../adapters/graphql-get-latest-articles";
-import * as uploadSitemap from "../adapters/s3-upload-sitemap";
-import { uploadSitemapForDomainAndLanguage } from "../use-cases/upload-sitemap-for-domain-and-language";
 import { createHandler } from "../handler";
-
-jest.mock("../use-cases/upload-sitemap-for-domain-and-language");
+import { createInMemoryLatestArticlesRepository } from "../adapters/latest-articles-repository";
+import { createTestArticlePublishedOneDayAgo } from "./data/create-test-article";
+import { createInMemoryXMLUploader } from "../adapters/xml-uploader";
+import { sitemapNameForDomain } from "../core/sitemap-name-for-domain";
+import { xmlSitemap } from "../core/xml-sitemap";
 
 describe("createHandler", () => {
-  it("correctly calls the upload sitemap use case for each domain and language", async () => {
-    const mockGraphQLGetLatestArticles = jest.fn().mockResolvedValue([]);
-    const mockS3uploadSitemap = jest.fn();
-    const createGraphQLGetLatestArticle = jest
-      .spyOn(getLatestArticles, "createGraphQLGetLatestArticle")
-      .mockImplementation(() => mockGraphQLGetLatestArticles);
-    const createS3UploadSitemap = jest
-      .spyOn(uploadSitemap, "createS3UploadSitemap")
-      .mockImplementation(() => mockS3uploadSitemap);
+  it("correctly sends the xml sitemaps", async () => {
     const domains = [
       {
         domain: "www.my-website.co.uk",
@@ -25,28 +17,51 @@ describe("createHandler", () => {
         language: "fr-FR",
       },
     ];
+    const articlesByDomain = {
+      [domains[0].domain]: [
+        createTestArticlePublishedOneDayAgo(),
+        createTestArticlePublishedOneDayAgo(),
+        createTestArticlePublishedOneDayAgo(),
+      ],
+      [domains[1].domain]: [
+        createTestArticlePublishedOneDayAgo(),
+        createTestArticlePublishedOneDayAgo(),
+        createTestArticlePublishedOneDayAgo(),
+      ],
+    };
     const todayDate = new Date();
-    const handler = createHandler({ domains, todayDate });
+    const latestArticlesRepository = createInMemoryLatestArticlesRepository({
+      articlesByDomain,
+    });
+    const xmlUploader = createInMemoryXMLUploader();
+    const handler = createHandler({
+      domains,
+      todayDate,
+      latestArticlesRepository,
+      xmlUploader,
+    });
 
     await handler();
 
-    expect(createGraphQLGetLatestArticle).toHaveBeenCalledWith({
-      graphQLEndpoint: process.env.GRAPHQL_ENDPOINT,
-    });
-    expect(createS3UploadSitemap).toHaveBeenCalled();
-    expect(uploadSitemapForDomainAndLanguage).toHaveBeenNthCalledWith(1, {
-      todayDate,
-      domain: "www.my-website.co.uk",
-      language: "en-GB",
-      getLatestArticles: mockGraphQLGetLatestArticles,
-      uploadSitemap: mockS3uploadSitemap,
-    });
-    expect(uploadSitemapForDomainAndLanguage).toHaveBeenNthCalledWith(2, {
-      todayDate,
-      domain: "www.my-website.fr",
-      language: "fr-FR",
-      getLatestArticles: mockGraphQLGetLatestArticles,
-      uploadSitemap: mockS3uploadSitemap,
-    });
+    expect(
+      xmlUploader.getSentXmlForFilename({
+        filename: sitemapNameForDomain({ domain: domains[0].domain }),
+      })
+    ).toEqual(
+      xmlSitemap({
+        language: domains[0].language,
+        articles: articlesByDomain[domains[0].domain],
+      })
+    );
+    expect(
+      xmlUploader.getSentXmlForFilename({
+        filename: sitemapNameForDomain({ domain: domains[1].domain }),
+      })
+    ).toEqual(
+      xmlSitemap({
+        language: domains[1].language,
+        articles: articlesByDomain[domains[1].domain],
+      })
+    );
   });
 });

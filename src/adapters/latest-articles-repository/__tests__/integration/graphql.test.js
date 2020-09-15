@@ -1,9 +1,9 @@
 import { createTestServer } from "./test-server";
 import {
-  createGraphQLGetLatestArticle,
+  createGraphQLLatestArticlesRepository,
   GraphQLError,
-} from "../../graphql-get-latest-articles";
-import { createTestArticlePublishedOneDayAgo } from "../../../__tests__/data/create-test-article";
+} from "../../graphql";
+import { createTestArticlePublishedOneDayAgo } from "../../../../__tests__/data/create-test-article";
 
 describe("createGraphQLGetLatestArticle", () => {
   let testServer;
@@ -19,9 +19,9 @@ describe("createGraphQLGetLatestArticle", () => {
     expect.assertions(3);
     const domain = "www.my-website.co.uk";
     const graphQLEndpoint = "http://localhost:4123";
-    const getLatestArticles = createGraphQLGetLatestArticle({
-      graphQLEndpoint,
-    });
+    const graphQLGetLatestArticlesRepository = createGraphQLLatestArticlesRepository(
+      { graphQLEndpoint }
+    );
     const expectedGraphQLQuery = `
   query {
     latestArticles {
@@ -41,7 +41,7 @@ describe("createGraphQLGetLatestArticle", () => {
     });
 
     // act
-    await getLatestArticles({ domain });
+    await graphQLGetLatestArticlesRepository.getLatestArticles({ domain });
 
     // assert
     const lastSentRequest = testServer.getLastSentRequest();
@@ -57,9 +57,9 @@ describe("createGraphQLGetLatestArticle", () => {
     expect.assertions(1);
     const domain = "www.my-website.co.uk";
     const graphQLEndpoint = "http://localhost:4123";
-    const getLatestArticles = createGraphQLGetLatestArticle({
-      graphQLEndpoint,
-    });
+    const graphQLGetLatestArticlesRepository = createGraphQLLatestArticlesRepository(
+      { graphQLEndpoint }
+    );
     const expectedArticles = [
       createTestArticlePublishedOneDayAgo(),
       createTestArticlePublishedOneDayAgo(),
@@ -75,9 +75,11 @@ describe("createGraphQLGetLatestArticle", () => {
     });
 
     // act
-    const articles = await getLatestArticles({
-      domain,
-    });
+    const articles = await graphQLGetLatestArticlesRepository.getLatestArticles(
+      {
+        domain,
+      }
+    );
 
     // assert
     expect(articles).toEqual(expectedArticles);
@@ -88,9 +90,9 @@ describe("createGraphQLGetLatestArticle", () => {
     expect.assertions(1);
     const domain = "www.my-website.co.uk";
     const graphQLEndpoint = "http://localhost:4123";
-    const getLatestArticles = createGraphQLGetLatestArticle({
-      graphQLEndpoint,
-    });
+    const graphQLGetLatestArticlesRepository = createGraphQLLatestArticlesRepository(
+      { graphQLEndpoint }
+    );
     const expectedErrors = [
       {
         message: "some error",
@@ -107,8 +109,8 @@ describe("createGraphQLGetLatestArticle", () => {
     });
 
     // act & assert
-    await expect(getLatestArticles({ domain })).rejects.toEqual(
-      new GraphQLError(expectedErrors)
-    );
+    await expect(
+      graphQLGetLatestArticlesRepository.getLatestArticles({ domain })
+    ).rejects.toEqual(new GraphQLError(expectedErrors));
   });
 });
