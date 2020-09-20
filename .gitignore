@@ -2,9 +2,14 @@
 node_modules
 jspm_packages
 
+# coverage
+coverage
+
 # Serverless directories
 .serverless
 .webpack
 
 .env
 .yarn-error.log
+jest.config.wallaby.js
+:memory
